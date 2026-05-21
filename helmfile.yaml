@@ -1,6 +1,4 @@
 repositories:
-  - name: djjudas21
-    url: https://djjudas21.github.io/charts/
   # - name: planka
   #   url: https://plankanban.github.io/planka
   - name: jellyfin
@@ -15,14 +13,6 @@ releases:
     namespace: cnpg-system
     createNamespace: true
     chart: cnpg/cloudnative-pg
-
-  - name: navidrome
-    namespace: navidrome
-    createNamespace: true
-    chart: djjudas21/navidrome
-    version: 6.7.6
-    values:
-      - values/navidrome.yaml
 
   # - name: planka
   #   namespace: planka
