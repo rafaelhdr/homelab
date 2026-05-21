@@ -1,6 +1,4 @@
 repositories:
-  # - name: planka
-  #   url: https://plankanban.github.io/planka
   - name: jellyfin
     url: https://jellyfin.github.io/jellyfin-helm
   - name: immich
@@ -13,14 +11,6 @@ releases:
     namespace: cnpg-system
     createNamespace: true
     chart: cnpg/cloudnative-pg
-
-  # - name: planka
-  #   namespace: planka
-  #   createNamespace: true
-  #   chart: planka/planka
-  #   version: 0.1.4
-  #   values:
-  #     - values/planka.yaml
 
   - name: jellyfin
     namespace: jellyfin
