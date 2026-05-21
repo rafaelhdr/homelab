@@ -1,0 +1,21 @@
+# Kubeconfigs — never commit credentials
+*kubeconfig*
+
+# Helmfile state
+helmfile.yaml.lock
+
+# Helm chart dependencies
+charts/
+
+# Environment files
+.env
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/

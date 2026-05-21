@@ -1,0 +1,49 @@
+repositories:
+  - name: djjudas21
+    url: https://djjudas21.github.io/charts/
+  # - name: planka
+  #   url: https://plankanban.github.io/planka
+  - name: jellyfin
+    url: https://jellyfin.github.io/jellyfin-helm
+  - name: immich
+    url: https://immich-app.github.io/immich-charts
+  - name: cnpg
+    url: https://cloudnative-pg.github.io/charts
+
+releases:
+  - name: cnpg
+    namespace: cnpg-system
+    createNamespace: true
+    chart: cnpg/cloudnative-pg
+
+  - name: navidrome
+    namespace: navidrome
+    createNamespace: true
+    chart: djjudas21/navidrome
+    version: 6.7.6
+    values:
+      - values/navidrome.yaml
+
+  # - name: planka
+  #   namespace: planka
+  #   createNamespace: true
+  #   chart: planka/planka
+  #   version: 0.1.4
+  #   values:
+  #     - values/planka.yaml
+
+  - name: jellyfin
+    namespace: jellyfin
+    createNamespace: true
+    chart: jellyfin/jellyfin
+    version: 2.7.0
+    values:
+      - values/jellyfin.yaml
+
+  - name: immich
+    namespace: immich
+    createNamespace: true
+    chart: immich/immich
+    version: 0.11.1
+    values:
+      - values/immich.yaml
