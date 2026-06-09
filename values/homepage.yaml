@@ -1,0 +1,26 @@
+config:
+  allowedHosts:
+    - "10.250.163.241:31569"
+    - "khadas:31569"
+
+service:
+  type: NodePort
+
+rbac:
+  enabled: false
+
+volumes:
+  - name: homepage-config
+    configMap:
+      name: homepage-config
+
+volumeMounts:
+  - name: homepage-config
+    mountPath: /app/config/services.yaml
+    subPath: services.yaml
+  - name: homepage-config
+    mountPath: /app/config/settings.yaml
+    subPath: settings.yaml
+  - name: homepage-config
+    mountPath: /app/config/widgets.yaml
+    subPath: widgets.yaml

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/part-of: dashboard
+data:
+  services.yaml: |
+    - Media:
+        - Jellyfin:
+            href: "http://10.250.163.241:30619"
+            description: Media streaming
+            icon: jellyfin.png
+        - Immich:
+            href: "http://10.250.163.241:31547"
+            description: Photo backup
+            icon: immich.png
+  settings.yaml: |
+    title: Homelab
+    headerStyle: boxed
+  widgets.yaml: |
+    - search:
+        provider: duckduckgo
+        target: _blank
