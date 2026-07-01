@@ -71,6 +71,35 @@ oci: true
 
 **Dashboard config** (services, settings, widgets) is in `k8s/homepage-config.yaml` as a ConfigMap mounted into `/app/config/`.
 
+## Checking for updates
+
+Check latest available chart versions against the pinned versions in `helmfile.yaml`:
+
+```bash
+# Update repo indexes first
+helm repo update
+
+# Check latest version for each pinned chart
+helm search repo jellyfin/jellyfin --versions | head -5
+helm search repo immich/immich --versions | head -5
+helm search repo cnpg/cloudnative-pg --versions | head -5
+
+# OCI chart (homepage) — list tags via crane or skopeo
+crane ls ghcr.io/m0nsterrr/helm-charts/homepage | sort -V | tail -5
+# or: skopeo list-tags docker://ghcr.io/m0nsterrr/helm-charts/homepage
+```
+
+Current pinned versions (update this table after bumping `helmfile.yaml`):
+
+| App | Pinned | Chart |
+|---|---|---|
+| Jellyfin | 3.2.0 | jellyfin/jellyfin |
+| Immich | 0.12.0 | immich/immich |
+| CNPG | unpinned | cnpg/cloudnative-pg |
+| Homepage | unpinned | m0nsterrr/homepage (OCI) |
+
+After bumping a version in `helmfile.yaml`, run `helmfile apply --selector name=<app>` to deploy. Check the chart's release notes for breaking changes before upgrading.
+
 ## Directory structure
 
 ```
