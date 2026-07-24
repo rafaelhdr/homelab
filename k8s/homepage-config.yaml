@@ -17,6 +17,11 @@ data:
             href: "http://10.250.163.241:31547"
             description: Photo backup
             icon: immich.png
+    - Downloads:
+        - qBittorrent:
+            href: "http://10.250.163.241:32022"
+            description: Torrent client
+            icon: qbittorrent.png
   settings.yaml: |
     title: Homelab
     headerStyle: boxed
