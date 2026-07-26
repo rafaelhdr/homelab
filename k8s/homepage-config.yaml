@@ -18,10 +18,14 @@ data:
             description: Photo backup
             icon: immich.png
     - Downloads:
-        - qBittorrent:
-            href: "http://10.250.163.241:32022"
-            description: Torrent client
-            icon: qbittorrent.png
+        - Radarr:
+            href: "http://10.250.163.241:30536"
+            description: Movie management
+            icon: radarr.png
+        - Prowlarr:
+            href: "http://10.250.163.241:30458"
+            description: Indexer manager
+            icon: prowlarr.png
   settings.yaml: |
     title: Homelab
     headerStyle: boxed

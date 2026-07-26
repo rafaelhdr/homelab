@@ -23,11 +23,21 @@ spec:
           securityContext:
             capabilities:
               add: ["NET_ADMIN"]
+          lifecycle:
+            postStart:
+              exec:
+                # kubelet restarts this container in place (pod netns persists) whenever the
+                # liveness probe fails; gluetun's own stale "ip rule" for table 51820 from the
+                # killed process can linger and corrupt routing for the next attempt. Clear it
+                # unconditionally on every start so restarts self-heal instead of compounding.
+                command: ["/bin/sh", "-c", "(ip rule del table 51820; ip -6 rule del table 51820) || true"]
           env:
             - name: VPN_SERVICE_PROVIDER
               value: "protonvpn"
             - name: VPN_TYPE
               value: "wireguard"
+            - name: WIREGUARD_IMPLEMENTATION
+              value: "userspace"
             - name: WIREGUARD_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
@@ -37,6 +47,20 @@ spec:
               value: "8080"
             - name: PORT_FORWARD_ONLY
               value: "on"
+            - name: VPN_PORT_FORWARDING
+              value: "on"
+            - name: VPN_PORT_FORWARDING_UP_COMMAND
+              value: >-
+                /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data
+                "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}"
+                http://127.0.0.1:8080/api/v2/app/setPreferences'
+            - name: VPN_PORT_FORWARDING_DOWN_COMMAND
+              value: >-
+                /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data
+                "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}"
+                http://127.0.0.1:8080/api/v2/app/setPreferences'
+            - name: UPDATER_PERIOD
+              value: "480h"
             - name: TZ
               value: "UTC"
             - name: HEALTH_SERVER_ADDRESS
@@ -83,7 +107,7 @@ metadata:
   name: qbittorrent
   namespace: qbittorrent
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: qbittorrent
   ports:
