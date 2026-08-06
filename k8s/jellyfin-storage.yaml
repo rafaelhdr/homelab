@@ -24,7 +24,21 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
   hostPath:
-    path: /srv/jellyfin/media
+    path: /mnt/storage/jellyfin/media
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jellyfin-radarr-movies-pv
+spec:
+  capacity:
+    storage: 300Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /mnt/storage/shared-downloads/movies
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -53,3 +67,17 @@ spec:
     requests:
       storage: 250Gi
   volumeName: jellyfin-media-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-radarr-movies
+  namespace: jellyfin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 300Gi
+  volumeName: jellyfin-radarr-movies-pv

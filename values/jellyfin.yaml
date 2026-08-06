@@ -6,6 +6,19 @@ persistence:
     enabled: true
     type: pvc
     existingClaim: jellyfin-media
+
+# Radarr's organized movie library, mounted read-only alongside the main `media`
+# PVC above so Jellyfin reads the same files Radarr manages — no hardlink/copy
+# needed since Jellyfin never writes to it.
+volumes:
+  - name: radarr-movies
+    persistentVolumeClaim:
+      claimName: jellyfin-radarr-movies
+volumeMounts:
+  - name: radarr-movies
+    mountPath: /radarr-movies
+    readOnly: true
+
 service:
   type: NodePort
   port: 8096

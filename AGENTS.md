@@ -36,10 +36,30 @@ All releases use `createNamespace: true` — namespaces are created automaticall
 ## Conventions
 
 - **Service type**: `NodePort` (no ingress controller)
-- **Storage**: `hostPath` PVs with `storageClassName: manual`, `ReclaimPolicy: Retain`
+- **Storage**: `hostPath` PVs with `storageClassName: manual`, `ReclaimPolicy: Retain`, split across two physical disks on `khadas` — see [External storage](#external-storage-mntstorage) below
 - **Chart versions**: pinned explicitly in `helmfile.yaml`
 - **Config**: per-app values in `values/<app>.yaml`
 - **Raw manifests**: `k8s/` for PVs, PVCs, Postgres clusters, and ConfigMaps
+
+## External storage (`/mnt/storage`)
+
+`khadas`'s root disk is small (~28Gi), so bulk media lives on a separate external SSD/NVMe (USB-attached), mounted at `/mnt/storage` via `/etc/fstab` (UUID-pinned, `nofail`, `x-systemd.device-timeout=10` so boot doesn't hang if USB enumeration is slow).
+
+**On `/mnt/storage`** (bulk media only):
+```
+/mnt/storage/
+├── immich/library              # immich-library-pv
+├── jellyfin/media               # jellyfin-media-pv
+└── shared-downloads/
+    ├── downloads/                # qbittorrent-downloads-pv AND part of radarr-data-pv
+    └── movies/                   # part of radarr-data-pv AND jellyfin-radarr-movies-pv (read-only)
+```
+
+**Radarr mounts `shared-downloads` as one PV** (`radarr-data-pv`, at `/data` in the container → `/data/downloads`, `/data/movies`) instead of separate `movies`/`downloads` PVs — required for hardlinking to work, see the gotcha below. Scoped to just `shared-downloads` (not all of `/mnt/storage`) specifically so Radarr's container can't see Immich/Jellyfin's directories — qBittorrent mounts only the narrower `shared-downloads/downloads` for the same reason (it never touches `movies`).
+
+**Still on the root disk** (`/srv/<app>/...`, unchanged): all `*-config` PVs (`jellyfin-config`, `qbittorrent-config`, `radarr-config`, `prowlarr-config`), `planka-data`, and the CNPG/Immich Postgres PVC (`local-path` StorageClass). Small, low-volume, and kept independent of the USB device's reliability.
+
+Migrated from `/srv/<app>/...` to `/mnt/storage/...` in 2026-08 once the external disk was added — old `/srv/<app>/{library,media,movies,downloads}` paths no longer exist.
 
 ## Service notes
 
@@ -49,11 +69,13 @@ Postgres operator required by Immich. Version unpinned, runs latest stable.
 
 ### Jellyfin
 
-Port `8096`. Uses two hostPath PVs: `jellyfin-config` (5Gi at `/srv/jellyfin/config`) and `jellyfin-media` (250Gi at `/srv/jellyfin/media`).
+Port `8096`. Uses `jellyfin-config` (5Gi at `/srv/jellyfin/config`) and `jellyfin-media` (250Gi at `/mnt/storage/jellyfin/media`, see [External storage](#external-storage-mntstorage)) via the chart's `persistence` block.
+
+**Also mounts Radarr's movie library read-only**, via the chart's generic `volumes`/`volumeMounts` in `values/jellyfin.yaml` (not the fixed `persistence.media` slot) — `jellyfin-radarr-movies` PVC → `jellyfin-radarr-movies-pv` → hostPath `/mnt/storage/shared-downloads/movies`, mounted at `/radarr-movies` in the container. Deliberately a *second*, separate mount rather than folding it into `jellyfin-media` or hardlinking: Jellyfin only ever reads these files, so there's no duplication/lifecycle problem to solve the way there was for qBittorrent↔Radarr — it just needs to see the same directory Radarr organizes into. Add `/radarr-movies` as an additional folder on a Movies library in Jellyfin's dashboard (Libraries → Add Media Library, or edit the existing one) to make it show up.
 
 ### Immich
 
-Depends on CNPG Postgres cluster (`immich-database`) with vector extensions (`pgvector` via `cloudnative-vectorchord`). Uses `immich-library` PVC (5Gi, hostPath `/srv/immich/library`). Machine learning disabled. Valkey enabled for job queuing.
+Depends on CNPG Postgres cluster (`immich-database`) with vector extensions (`pgvector` via `cloudnative-vectorchord`). Uses `immich-library` PVC (5Gi, hostPath `/mnt/storage/immich/library`, see [External storage](#external-storage-mntstorage)). Machine learning disabled. Valkey enabled for job queuing.
 
 ### Homepage
 
@@ -86,7 +108,7 @@ Not a helm release — deployed as a raw two-container Deployment in `k8s/qbitto
   kubectl create secret generic gluetun-secret -n qbittorrent \
     --from-literal=wireguardPrivateKey='<key-from-protonvpn>'
   ```
-- **Storage**: `qbittorrent-config` (1Gi, hostPath `/srv/qbittorrent/config`) and `qbittorrent-downloads` (100Gi placeholder, hostPath `/srv/qbittorrent/downloads`) — adjust the downloads PV size in `k8s/qbittorrent-storage.yaml` to match actual free disk before applying.
+- **Storage**: `qbittorrent-config` (1Gi, hostPath `/srv/qbittorrent/config`) and `qbittorrent-downloads` (100Gi placeholder, hostPath `/mnt/storage/downloads`, see [External storage](#external-storage-mntstorage)) — adjust the downloads PV size in `k8s/qbittorrent-storage.yaml` to match actual free disk before applying.
 - **Firewall**: gluetun blocks all inbound traffic by default; `FIREWALL_INPUT_PORTS=8080` on the gluetun container allows the WebUI through. If you change qBittorrent's `WEBUI_PORT`, update this too. This is required even though the Service is ClusterIP-only (see below) — Radarr's connection to the WebUI/API is still an inbound packet from gluetun's point of view.
 - **Service is ClusterIP-only, no NodePort**: qBittorrent's WebUI is deliberately not exposed outside the cluster. Radarr reaches it via `qbittorrent.qbittorrent.svc.cluster.local:8080`; for manual browser access use `kubectl port-forward -n qbittorrent svc/qbittorrent 8080:8080`.
 - **VPN port forwarding**: `VPN_PORT_FORWARDING=on` plus `VPN_PORT_FORWARDING_UP_COMMAND`/`_DOWN_COMMAND` call qBittorrent's own API at `http://127.0.0.1:8080` (same pod, same netns) to set its listening port whenever ProtonVPN assigns or rotates a forwarded port — this is gluetun's native mechanism, so no extra sidecar is needed for it. **Requires** qBittorrent's WebUI "Bypass authentication for clients on localhost" (`WebUI\LocalHostAuth=false` in `qBittorrent.conf`) enabled on the config PVC — same not-in-git caveat as the Host-header fix below; this has not yet been applied, so the up/down command will get a 401 until it is.
@@ -102,7 +124,9 @@ Movie management: watches for wanted movies, searches indexers/trackers, sends t
 
 - **Deliberately not routed through the gluetun sidecar** that qBittorrent uses. Only the torrent client's peer-to-peer traffic needs VPN protection; Radarr's own traffic (TMDB metadata lookups, indexer/tracker API calls, talking to Jellyfin/Bazarr/notification services) is normal outbound HTTPS with nothing to hide from a swarm. Putting Radarr in the same pod as gluetun would force *all* of that traffic through the VPN for no benefit, and every new integration (a new indexer, a new notification webhook) would require another `FIREWALL_INPUT_PORTS`/allowlist entry on gluetun just to keep working. It would also put Radarr's own WebUI behind the same inbound firewall qBittorrent's WebUI fights with (see the Host-header gotcha above).
 - Radarr talks to qBittorrent over the cluster network as a normal Download Client: host `qbittorrent.qbittorrent.svc.cluster.local`, port `8080`. This works even though qBittorrent's pod is VPN-routed, because gluetun's firewall only filters *inbound* connections to the ports listed in `FIREWALL_INPUT_PORTS` (already `8080` for the WebUI/API) — it doesn't care that the caller is another in-cluster pod rather than a browser.
-- **Storage**: `radarr-config` (1Gi, hostPath `/srv/radarr/config`), `radarr-movies` (200Gi placeholder, hostPath `/srv/radarr/movies` — the organized library, adjust size to actual free disk), and `radarr-downloads` (100Gi, hostPath `/srv/qbittorrent/downloads`). The last one is a separate PV that points at the *same* hostPath as `qbittorrent-downloads` — two distinct PV objects deliberately backed by one directory, so Radarr can see and import qBittorrent's completed downloads. Safe here only because everything is single-node hostPath; don't replicate this pattern once real shared storage (NFS, etc.) is introduced.
+- **Storage**: `radarr-config` (1Gi, hostPath `/srv/radarr/config`) and `radarr-data` (300Gi placeholder, hostPath `/mnt/storage/shared-downloads`, mounted at `/data` in the container → `/data/downloads`, `/data/movies`, adjust size to actual free disk). qBittorrent's `qbittorrent-downloads-pv` points at `/mnt/storage/shared-downloads/downloads` independently, so both apps see the same completed-download files without Radarr needing broader access than `shared-downloads`.
+- **Avoiding duplicate storage on import — must be ONE shared mount, not two**: Radarr's Settings → Media Management → "Use Hardlinks instead of Copy" only avoids duplicating a file if the source (`/downloads`) and destination (`/movies`) are part of the *same bind mount* inside the container. Confirmed by hitting this directly: with `radarr-movies` and `radarr-downloads` as two separate PVs/PVCs (even though both hostPaths lived on the identical physical disk), every import silently fell back to a full copy — `ln` inside the Radarr container failed with `Cross-device link` (`EXDEV`), because Kubernetes bind-mounts each `hostPath` volume independently and the kernel refuses hardlinks across separate mounts, regardless of the underlying disk being the same. Fixed by giving Radarr a single `radarr-data-pv` covering just `/mnt/storage/shared-downloads` (not all of `/mnt/storage` — kept narrow so Radarr can't see Immich/Jellyfin's directories) mounted once at `/data`, so `/data/downloads` and `/data/movies` share one mount and hardlinks actually work. **Don't reintroduce split mounts for anything that needs to hardlink across them.**
+  - **Manual follow-up required in Radarr's WebUI after this change** (not in git): update the Root Folder from `/movies` to `/data/movies`, add a Remote Path Mapping for the qBittorrent download client (qBittorrent still reports paths as `/downloads/...`; Radarr now sees the same files at `/data/downloads/...`), and re-point/rescan existing movie entries so Radarr's DB matches the new path — the files themselves haven't moved, only the container path prefix changed.
 - **First-time setup**: open the WebUI, add the qBittorrent download client (see above), add at least one indexer (or point Radarr at a Prowlarr instance if one gets added later), then add movies from the search page — Radarr searches indexers, sends the chosen release to qBittorrent, and imports the finished file into `/movies` once qBittorrent reports it complete.
 
 ### Prowlarr (indexer manager, NOT behind gluetun)
@@ -158,7 +182,7 @@ After bumping a version in `helmfile.yaml`, run `helmfile apply --selector name=
 │   ├── qbittorrent-storage.yaml   # PVs + PVCs
 │   ├── qbittorrent.yaml           # gluetun + qBittorrent Deployment, Service (no chart)
 │   ├── radarr-namespace.yaml
-│   ├── radarr-storage.yaml        # PVs + PVCs (config, movies, shared downloads)
+│   ├── radarr-storage.yaml        # PVs + PVCs (config, shared /data mount for movies+downloads)
 │   ├── radarr.yaml                # Radarr Deployment, Service (no chart, no VPN)
 │   ├── prowlarr-namespace.yaml
 │   ├── prowlarr-storage.yaml      # PV + PVC (config only)

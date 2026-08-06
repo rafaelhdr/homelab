@@ -15,30 +15,16 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: radarr-movies-pv
+  name: radarr-data-pv
 spec:
   capacity:
-    storage: 200Gi
+    storage: 300Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
   hostPath:
-    path: /srv/radarr/movies
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: radarr-downloads-pv
-spec:
-  capacity:
-    storage: 100Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
-  hostPath:
-    path: /srv/qbittorrent/downloads
+    path: /mnt/storage/shared-downloads
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -57,7 +43,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: radarr-movies
+  name: radarr-data
   namespace: radarr
 spec:
   accessModes:
@@ -65,19 +51,5 @@ spec:
   storageClassName: manual
   resources:
     requests:
-      storage: 200Gi
-  volumeName: radarr-movies-pv
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: radarr-downloads
-  namespace: radarr
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: manual
-  resources:
-    requests:
-      storage: 100Gi
-  volumeName: radarr-downloads-pv
+      storage: 300Gi
+  volumeName: radarr-data-pv

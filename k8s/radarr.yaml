@@ -32,20 +32,15 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: movies
-              mountPath: /movies
-            - name: downloads
-              mountPath: /downloads
+            - name: data
+              mountPath: /data
       volumes:
         - name: config
           persistentVolumeClaim:
             claimName: radarr-config
-        - name: movies
+        - name: data
           persistentVolumeClaim:
-            claimName: radarr-movies
-        - name: downloads
-          persistentVolumeClaim:
-            claimName: radarr-downloads
+            claimName: radarr-data
 ---
 apiVersion: v1
 kind: Service

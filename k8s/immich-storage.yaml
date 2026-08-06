@@ -10,7 +10,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
   hostPath:
-    path: /srv/immich/library
+    path: /mnt/storage/immich/library
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

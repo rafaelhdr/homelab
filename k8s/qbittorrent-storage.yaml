@@ -24,7 +24,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
   hostPath:
-    path: /srv/qbittorrent/downloads
+    path: /mnt/storage/shared-downloads/downloads
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
