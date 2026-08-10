@@ -4,13 +4,14 @@
 
 Single-node K3s homelab managed with Helmfile. Runs on host `10.250.163.241` (node: `khadas`).
 
+**Immich moved off this stack** — now runs standalone via containerd/nerdctl, see `containerd/README.md`. Its k8s manifests (`k8s/immich-*.yaml`, `values/immich.yaml`) and helmfile release were removed from this repo in 2026-08; the old `immich-library-pv`/`immich-database` k8s objects may still exist live in-cluster (not yet torn down) but are no longer managed here.
+
 ## Quick reference
 
 | App | Namespace | Chart | Version | Access |
 |---|---|---|---|---|
 | CNPG | cnpg-system | cnpg/cloudnative-pg | — | operator |
 | Jellyfin | jellyfin | jellyfin/jellyfin | 3.2.0 | `:30619` |
-| Immich | immich | immich/immich | 0.12.0 | `:31547` |
 | Homepage | homepage | m0nsterrr/homepage (OCI) | 4.12.1 | `:31569` |
 | qBittorrent | qbittorrent | raw manifest (no chart) | gluetun v3.41.1 / qbittorrent 5.2.3 | ClusterIP only, `kubectl port-forward` for WebUI |
 | Radarr | radarr | raw manifest (no chart) | radarr 6.3.0.10514-ls312 | `:<nodeport>` |
@@ -48,7 +49,7 @@ All releases use `createNamespace: true` — namespaces are created automaticall
 **On `/mnt/storage`** (bulk media only):
 ```
 /mnt/storage/
-├── immich/library              # immich-library-pv
+├── immich/library              # orphaned — was immich-library-pv, Immich now runs via containerd/nerdctl
 ├── jellyfin/media               # jellyfin-media-pv
 └── shared-downloads/
     ├── downloads/                # qbittorrent-downloads-pv AND part of radarr-data-pv
@@ -57,7 +58,7 @@ All releases use `createNamespace: true` — namespaces are created automaticall
 
 **Radarr mounts `shared-downloads` as one PV** (`radarr-data-pv`, at `/data` in the container → `/data/downloads`, `/data/movies`) instead of separate `movies`/`downloads` PVs — required for hardlinking to work, see the gotcha below. Scoped to just `shared-downloads` (not all of `/mnt/storage`) specifically so Radarr's container can't see Immich/Jellyfin's directories — qBittorrent mounts only the narrower `shared-downloads/downloads` for the same reason (it never touches `movies`).
 
-**Still on the root disk** (`/srv/<app>/...`, unchanged): all `*-config` PVs (`jellyfin-config`, `qbittorrent-config`, `radarr-config`, `prowlarr-config`), `planka-data`, and the CNPG/Immich Postgres PVC (`local-path` StorageClass). Small, low-volume, and kept independent of the USB device's reliability.
+**Still on the root disk** (`/srv/<app>/...`, unchanged): all `*-config` PVs (`jellyfin-config`, `qbittorrent-config`, `radarr-config`, `prowlarr-config`), `planka-data`, and the CNPG Postgres PVCs (`local-path` StorageClass, includes the now-orphaned `immich-database` cluster). Small, low-volume, and kept independent of the USB device's reliability.
 
 Migrated from `/srv/<app>/...` to `/mnt/storage/...` in 2026-08 once the external disk was added — old `/srv/<app>/{library,media,movies,downloads}` paths no longer exist.
 
@@ -65,17 +66,13 @@ Migrated from `/srv/<app>/...` to `/mnt/storage/...` in 2026-08 once the externa
 
 ### CNPG
 
-Postgres operator required by Immich. Version unpinned, runs latest stable.
+Postgres operator. Version unpinned, runs latest stable.
 
 ### Jellyfin
 
 Port `8096`. Uses `jellyfin-config` (5Gi at `/srv/jellyfin/config`) and `jellyfin-media` (250Gi at `/mnt/storage/jellyfin/media`, see [External storage](#external-storage-mntstorage)) via the chart's `persistence` block.
 
 **Also mounts Radarr's movie library read-only**, via the chart's generic `volumes`/`volumeMounts` in `values/jellyfin.yaml` (not the fixed `persistence.media` slot) — `jellyfin-radarr-movies` PVC → `jellyfin-radarr-movies-pv` → hostPath `/mnt/storage/shared-downloads/movies`, mounted at `/radarr-movies` in the container. Deliberately a *second*, separate mount rather than folding it into `jellyfin-media` or hardlinking: Jellyfin only ever reads these files, so there's no duplication/lifecycle problem to solve the way there was for qBittorrent↔Radarr — it just needs to see the same directory Radarr organizes into. Add `/radarr-movies` as an additional folder on a Movies library in Jellyfin's dashboard (Libraries → Add Media Library, or edit the existing one) to make it show up.
-
-### Immich
-
-Depends on CNPG Postgres cluster (`immich-database`) with vector extensions (`pgvector` via `cloudnative-vectorchord`). Uses `immich-library` PVC (5Gi, hostPath `/mnt/storage/immich/library`, see [External storage](#external-storage-mntstorage)). Machine learning disabled. Valkey enabled for job queuing.
 
 ### Homepage
 
@@ -147,7 +144,6 @@ helm repo update
 
 # Check latest version for each pinned chart
 helm search repo jellyfin/jellyfin --versions | head -5
-helm search repo immich/immich --versions | head -5
 helm search repo cnpg/cloudnative-pg --versions | head -5
 
 # OCI chart (homepage) — list tags via crane or skopeo
@@ -160,7 +156,6 @@ Current pinned versions (update this table after bumping `helmfile.yaml`):
 | App | Pinned | Chart |
 |---|---|---|
 | Jellyfin | 3.2.0 | jellyfin/jellyfin |
-| Immich | 0.12.0 | immich/immich |
 | CNPG | unpinned | cnpg/cloudnative-pg |
 | Homepage | unpinned | m0nsterrr/homepage (OCI) |
 
@@ -173,9 +168,6 @@ After bumping a version in `helmfile.yaml`, run `helmfile apply --selector name=
 ├── k8s/
 │   ├── homepage-config.yaml       # Homepage dashboard ConfigMap
 │   ├── homepage-namespace.yaml    # (redundant with createNamespace: true)
-│   ├── immich-namespace.yaml
-│   ├── immich-postgres.yaml       # CNPG Cluster CRD
-│   ├── immich-storage.yaml        # PV + PVC
 │   ├── jellyfin-namespace.yaml
 │   ├── jellyfin-storage.yaml      # PVs + PVCs
 │   ├── qbittorrent-namespace.yaml
@@ -189,7 +181,6 @@ After bumping a version in `helmfile.yaml`, run `helmfile apply --selector name=
 │   └── prowlarr.yaml              # Prowlarr Deployment, Service (no chart, no VPN)
 ├── values/
 │   ├── homepage.yaml
-│   ├── immich.yaml
 │   └── jellyfin.yaml
 └── README.md
 ```

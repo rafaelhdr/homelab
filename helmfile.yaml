@@ -1,13 +1,13 @@
 repositories:
   - name: jellyfin
     url: https://jellyfin.github.io/jellyfin-helm
-  - name: immich
-    url: https://immich-app.github.io/immich-charts
   - name: cnpg
     url: https://cloudnative-pg.github.io/charts
   - name: m0nsterrr
     url: ghcr.io/m0nsterrr/helm-charts
     oci: true
+  - name: plankanban
+    url: https://plankanban.github.io/planka/
 
 releases:
   - name: cnpg
@@ -23,17 +23,16 @@ releases:
     values:
       - values/jellyfin.yaml
 
-  - name: immich
-    namespace: immich
-    createNamespace: true
-    chart: immich/immich
-    version: 0.12.0
-    values:
-      - values/immich.yaml
-
   - name: homepage
     namespace: homepage
     createNamespace: true
     chart: m0nsterrr/homepage
     values:
       - values/homepage.yaml
+
+  - name: planka
+    namespace: planka
+    createNamespace: true
+    chart: plankanban/planka
+    values:
+      - values/planka.yaml
