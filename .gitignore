@@ -10,6 +10,9 @@ charts/
 # Environment files
 .env
 
+# uv virtual environments
+.venv/
+
 # OS metadata
 .DS_Store
 Thumbs.db
@@ -22,3 +25,9 @@ Thumbs.db
 
 # ai-jail
 .ai-jail
+
+# Restore drill — generated/secret; only the checked-in scripts are tracked
+restore-drill/*
+!restore-drill/keys.txt.example
+!restore-drill/setup.sh
+!restore-drill/restore.sh

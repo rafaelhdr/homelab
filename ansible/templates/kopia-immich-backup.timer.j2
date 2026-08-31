@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Kopia Immich backup every 4 hours
+
+[Timer]
+# 15 minutes after Immich's own DB backup cron (0 */4 * * *, same 4h grid) so each
+# snapshot picks up the dump just written instead of racing it and grabbing yesterday's.
+OnCalendar=*-*-* 0/4:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

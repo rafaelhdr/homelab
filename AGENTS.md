@@ -134,6 +134,18 @@ Manages torrent/Usenet indexers in one place and syncs them into Radarr (and Son
 - **Storage**: `prowlarr-config` only (1Gi, hostPath `/srv/prowlarr/config`). Unlike Radarr's extra `/movies` volume, this hostPath got auto-chowned to the `PUID`/`PGID` user (`1000:1000`) by the linuxserver image's own s6-init on first boot — no manual `chown` needed. (The gotcha we hit with Radarr's `/movies` only affects *non-standard* extra volumes; linuxserver images fix up the conventional `/config` mount themselves.)
 - **Wiring to Radarr**: in Prowlarr, Settings → Apps → add Radarr with URL `http://radarr.radarr.svc.cluster.local:7878` and Radarr's API key (`/config/config.xml` inside the Radarr pod, or Settings → General in Radarr's WebUI). Then add indexers in Prowlarr — it pushes them to Radarr automatically, no per-indexer setup inside Radarr itself.
 
+## Backups (Immich)
+
+Kopia snapshots `/home/rafaelhdr/homelab/library` (Immich's `UPLOAD_LOCATION`) every 4h via a systemd timer/service pair templated by Ansible (`ansible/templates/kopia-immich-backup.{service,timer}.j2`, applied via `just deploy`). Only the library folder is snapshotted — Postgres isn't backed up directly by kopia.
+
+Immich's own scheduled DB backup (Administration → Settings → Backup in the UI, not stored in git) writes `pg_dump` output into `library/backups/`, which rides along inside the same kopia snapshot since it's just another file under the snapshotted path — that's how the Postgres state actually gets backed up, not via kopia talking to the DB.
+
+**Cadence is intentionally offset, not identical.** Immich's DB backup cron is `0 */4 * * *` — the same 4h grid as kopia. Kopia's timer runs 15 minutes later (`OnCalendar=*-*-* 0/4:15:00`) so it reliably picks up the dump that was *just* written instead of racing it: firing both at `:00` risks kopia grabbing yesterday's dump file and not catching the fresh one until the next cycle, four hours later.
+
+**After editing the timer/service templates**, `just deploy` alone is sufficient — `daemon-reload` doesn't restart an already-running timer with the old `OnCalendar` baked in, so the playbook notifies a handler (`Restart kopia-immich-backup timer`) whenever the template content actually changes, restarting it automatically. No manual `systemctl restart` needed after a normal deploy.
+
+**Restore drills**: `restore-drill/` is a throwaway Immich instance for testing recovery locally, driven by the project-scoped `restore-drill` skill (`.claude/skills/restore-drill/`) plus two checked-in scripts. `setup.sh` generates `docker-compose.yml` from `containerd/docker-compose.yml` (the single source of truth for the compose spec — never hand-duplicated) and a throwaway `.env` with a fresh DB password; `restore.sh` connects to the already-authenticated kopia repository and restores the latest snapshot into `restore-drill/library`. B2 credentials (bucket, key ID, application key) live in `restore-drill/keys.txt` (gitignored, template at `keys.txt.example`) — deliberately separate from the compose `.env`, and the repository *password* itself is never stored anywhere, only supplied interactively when connecting kopia. The skill restores the snapshot, brings the stack up, then leaves the DB half to Immich's own "Restore Your Library" wizard, which replays the newest `library/backups/immich-db-backup-*.sql.gz` against the fresh Postgres container. `restore-drill/keys.txt`, `docker-compose.yml`, `.env`, `library/`, `postgres/`, and `.kopia/` are all gitignored — credentials, generated config, and restored data never get committed.
+
 ## Checking for updates
 
 Check latest available chart versions against the pinned versions in `helmfile.yaml`:

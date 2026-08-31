@@ -1,0 +1,43 @@
+---
+- name: Deploy Kopia Immich backup timer
+  hosts: all
+  become: true
+
+  vars:
+    immich_library_path: /home/rafaelhdr/homelab/library
+
+  tasks:
+    - name: Install kopia-immich-backup.service
+      ansible.builtin.template:
+        src: templates/kopia-immich-backup.service.j2
+        dest: /etc/systemd/system/kopia-immich-backup.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart kopia-immich-backup timer
+
+    - name: Install kopia-immich-backup.timer
+      ansible.builtin.template:
+        src: templates/kopia-immich-backup.timer.j2
+        dest: /etc/systemd/system/kopia-immich-backup.timer
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart kopia-immich-backup timer
+
+    - name: Enable and start kopia-immich-backup.timer
+      ansible.builtin.systemd:
+        name: kopia-immich-backup.timer
+        daemon_reload: true
+        enabled: true
+        state: started
+
+  handlers:
+    # systemd doesn't pick up an OnCalendar change on an already-running timer from
+    # daemon-reload alone — the running instance keeps the schedule it started with
+    # until restarted. Only fires when the service/timer file content actually changed.
+    - name: Restart kopia-immich-backup timer
+      ansible.builtin.systemd:
+        name: kopia-immich-backup.timer
+        daemon_reload: true
+        state: restarted

@@ -1,0 +1,10 @@
+[Unit]
+Description=Kopia snapshot of Immich library
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ ansible_user }}
+Environment=HOME=/home/{{ ansible_user }}
+ExecStart=/usr/bin/kopia snapshot create {{ immich_library_path }}
