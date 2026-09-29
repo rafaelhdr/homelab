@@ -1,12 +1,27 @@
-#
-# Immich, run via containerd/nerdctl instead of Docker.
-# Based on the official compose file: https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
-# Keep this in sync when bumping IMMICH_VERSION - diff against the release's docker-compose.yml first.
-#
 
-name: immich
+name: homelab
 
 services:
+  #
+  # Caddy
+  # Single reverse proxy for docker compose services
+  #
+  caddy:
+    container_name: caddy
+    image: docker.io/library/caddy:2
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  #
+  # Immich, run via containerd/nerdctl instead of Docker.
+  # Based on the official compose file: https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+  # Keep this in sync when bumping IMMICH_VERSION - diff against the release's docker-compose.yml first.
+  #
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
@@ -56,6 +71,25 @@ services:
     restart: always
     healthcheck:
       disable: false
+  #
+  # AdGuard
+  # Source: https://adguard-dns.io/kb/adguard-home/docker/
+  # Some adaptations were made for the compose version running behind Netbird
+  #
+  adguardhome:
+    container_name: adguardhome
+    image: docker.io/adguard/adguardhome:latest
+    restart: unless-stopped
+    ports:
+      - '$HOMELAB_IP:53:53/tcp'
+      - '$HOMELAB_IP:53:53/udp'
+      - '5335:53/tcp'
+      - '5335:53/udp'
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
 
 volumes:
   model-cache:
+  caddy-data:
+  caddy-config:

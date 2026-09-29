@@ -1,0 +1,7 @@
+http://photos.internal {
+	reverse_proxy immich-server:2283
+}
+
+http://dns.internal {
+	reverse_proxy adguardhome:80
+}
