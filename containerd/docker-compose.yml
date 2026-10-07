@@ -2,6 +2,7 @@
 name: homelab
 
 services:
+
   #
   # Caddy
   # Single reverse proxy for docker compose services
@@ -71,6 +72,7 @@ services:
     restart: always
     healthcheck:
       disable: false
+
   #
   # AdGuard
   # Source: https://adguard-dns.io/kb/adguard-home/docker/
@@ -88,6 +90,20 @@ services:
     volumes:
       - ./adguard/work:/opt/adguardhome/work
       - ./adguard/conf:/opt/adguardhome/conf
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    ports:
+      - 8096:8096/tcp
+      - 7359:7359/udp
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - ${HOME}/media:/media:ro
+    restart: 'unless-stopped'
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://example.com
 
 volumes:
   model-cache:
