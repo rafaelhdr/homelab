@@ -31,3 +31,7 @@ restore-drill/*
 !restore-drill/keys.txt.example
 !restore-drill/setup.sh
 !restore-drill/restore.sh
+
+# containerd service data — live state, never commit. Gitea's app.ini holds
+# its generated SECRET_KEY/INTERNAL_TOKEN, and the tree holds every repo.
+containerd/gitea/

@@ -105,6 +105,36 @@ services:
     environment:
       - JELLYFIN_PublishedServerUrl=http://example.com
 
+  #
+  # Gitea
+  # Self-hosted Git service. SQLite on a bind mount — no extra database
+  # service and nothing new in .env.
+  # Source: https://docs.gitea.com/installation/install-with-docker/
+  #
+  gitea:
+    container_name: gitea
+    image: docker.io/gitea/gitea:28.1.0
+    restart: always
+    environment:
+      # Deliberately no USER_UID/USER_GID here: setting them breaks writes to
+      # the ./gitea bind mount under rootless nerdctl.
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__server__ROOT_URL=http://git.internal/
+      # Host port 22 is this machine's own sshd — Gitea's SSH is published on
+      # 2222 and that is the port shown in clone URLs. Hide it with a
+      # `Host git.internal` / `Port 2222` block in ~/.ssh/config (see README).
+      - GITEA__server__SSH_PORT=2222
+      # Everything is configured above; skip the first-run install wizard so
+      # clone URLs are correct immediately.
+      - GITEA__security__INSTALL_LOCK=true
+      - GITEA__service__DISABLE_REGISTRATION=true
+    volumes:
+      - ./gitea:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - '3000:3000'
+      - '2222:22'
+
 volumes:
   model-cache:
   caddy-data:

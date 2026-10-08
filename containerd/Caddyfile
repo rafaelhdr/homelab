@@ -5,3 +5,10 @@ http://photos.internal {
 http://dns.internal {
 	reverse_proxy adguardhome:80
 }
+
+# Gitea WebUI + HTTP clone/push. Caddy forwards Host/X-Forwarded-Proto and
+# upgrades the /-/ws WebSocket itself, so no extra directives are needed.
+# Git-over-SSH does not go through here — it is published on host port 2222.
+http://git.internal {
+	reverse_proxy gitea:3000
+}
