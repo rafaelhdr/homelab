@@ -4,7 +4,7 @@ The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, J
 
 ## Setup (Immich)
 
-1. `rsync` your backed-up Immich library into `./library` (relative to this folder — hardcoded in `docker-compose.yml`, along with `./postgres` for the database).
+1. `rsync` your backed-up Immich library into `./library` (under `DATA_ROOT` — see [Data root](#data-root); `./postgres` for the database).
 2. Bring it up:
 
    ```bash
@@ -12,6 +12,10 @@ The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, J
    ```
 
 3. Open `http://<host>:2283` and create the admin account.
+
+## Data root
+
+Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
 
 ## Notes (Immich)
 

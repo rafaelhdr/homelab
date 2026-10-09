@@ -27,7 +27,7 @@ services:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
-      - ./library:/data
+      - ${DATA_ROOT:-.}/library:/data
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
@@ -67,7 +67,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - ${DATA_ROOT:-.}/postgres:/var/lib/postgresql/data
     shm_size: 128mb
     restart: always
     healthcheck:
@@ -88,8 +88,8 @@ services:
       - '5335:53/tcp'
       - '5335:53/udp'
     volumes:
-      - ./adguard/work:/opt/adguardhome/work
-      - ./adguard/conf:/opt/adguardhome/conf
+      - ${DATA_ROOT:-.}/adguard/work:/opt/adguardhome/work
+      - ${DATA_ROOT:-.}/adguard/conf:/opt/adguardhome/conf
 
   jellyfin:
     image: jellyfin/jellyfin
@@ -98,8 +98,8 @@ services:
       - 8096:8096/tcp
       - 7359:7359/udp
     volumes:
-      - ./jellyfin/config:/config
-      - ./jellyfin/cache:/cache
+      - ${DATA_ROOT:-.}/jellyfin/config:/config
+      - ${DATA_ROOT:-.}/jellyfin/cache:/cache
       - ${HOME}/media:/media:ro
     restart: 'unless-stopped'
     environment:
@@ -129,7 +129,7 @@ services:
       - GITEA__security__INSTALL_LOCK=true
       - GITEA__service__DISABLE_REGISTRATION=true
     volumes:
-      - ./gitea:/data
+      - ${DATA_ROOT:-.}/gitea:/data
       - /etc/localtime:/etc/localtime:ro
     ports:
       - '3000:3000'
