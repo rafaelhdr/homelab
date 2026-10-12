@@ -1,0 +1,50 @@
+# Hermes Agent config — sweet-home profile (named profile, NOT the host).
+#
+# This is a DELTA file, not a full dump. Hermes fills every unspecified option
+# from its built-in defaults and materialises the complete config.yaml in place
+# on first run. Only the settings this deployment actually pins live here.
+#
+# Schema version matches hermes-agent v0.21.6 (`cli-config.yaml.example`).
+# Do not copy an older config across — let Hermes migrate, then diff.
+#
+# Matrix is deliberately absent: since v0.21.x every Matrix setting is a
+# `MATRIX_*` variable in .env, not a config.yaml section. See .env.example.
+#
+# Neither agent is "the main one": the multiplexing host is the empty default
+# profile in ../host/, and both agents are named profiles beside each other.
+#
+# Seed:  cp config.yaml.example  ${DATA_ROOT}/hermes-data/profiles/sweet-home/config.yaml
+# The copy is writable — Hermes owns it and will rewrite it. Never bind-mount
+# this file over the live one.
+
+_config_version: 50
+
+model:
+  # Xiaomi MiMo. `xiaomi` is a first-class provider; it reads XIAOMI_API_KEY
+  # and XIAOMI_BASE_URL from .env. Model names are case-sensitive and the
+  # catalog differs per plan — `mimo-v2-flash` does not exist on either
+  # endpoint, the real names are `mimo-v2.6-flash` / `mimo-v2.6-pro`.
+  default: mimo-v2.6-flash
+  provider: xiaomi
+
+terminal:
+  # This profile's own workdir. HERMES_WRITE_SAFE_ROOT=/opt/data is baked into
+  # the official image, so the agent cannot write outside the mounted volume.
+  backend: local
+  cwd: /opt/data/profiles/sweet-home
+
+agent:
+  # Carried over from the previous deployment (the built-in default is 500).
+  max_turns: 90
+
+# One session per participant in shared rooms — the secure default, kept
+# explicit. Set false only for a single shared "room brain".
+group_sessions_per_user: true
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+
+# Deliberately no `gateway.multiplex_profiles` here: that flag belongs to the
+# default profile, which is the multiplexing host. A named profile setting it
+# would be ignored or rewritten.

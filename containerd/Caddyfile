@@ -16,3 +16,13 @@ http://media.internal {
 http://git.internal {
 	reverse_proxy gitea:3000
 }
+
+# Hermes dashboard. Only Caddy can reach the container (it publishes no host
+# port), so this site is the whole access surface. The dashboard enforces its
+# own basic auth (see hermes/host/.env.example) — Hermes refuses to bind
+# 0.0.0.0 without an auth provider — so / answers 302 → /login. Recreate this
+# container after editing: a replaced file gets a new inode and a running
+# container keeps reading the old one.
+http://hermes.internal {
+	reverse_proxy hermes-dashboard:9119
+}

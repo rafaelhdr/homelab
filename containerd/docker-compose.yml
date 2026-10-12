@@ -135,6 +135,79 @@ services:
       - '3000:3000'
       - '2222:22'
 
+  #
+  # Hermes
+  # AI agent over Matrix. One gateway process multiplexes two profiles from a
+  # single /opt/data: the empty default profile acts as the host and both
+  # agents live as named peers under profiles/ — neither is "the main one".
+  # Xiaomi MiMo for inference.
+  # Source: https://github.com/NousResearch/hermes-agent
+  # Setup: hermes/README.md — config, cron and secrets must be seeded first.
+  #
+  # Outbound only (matrix.org, api.xiaomimimo.com): no ports are published on
+  # the gateway, and the dashboard below is reachable solely via Caddy.
+  #
+  # HERMES_UID/HERMES_GID below pin the container UID to 1000 so rootless
+  # containerd maps it onto host 100999, matching gitea. They cannot produce
+  # host UID 1000 — rootless userns mapping is fixed — so files in hermes-data/
+  # are owned by 100999 and the two .env files need mode 0666 to be editable
+  # by you as well. See hermes/README.md#ownership.
+  #
+  hermes:
+    container_name: hermes
+    image: docker.io/nousresearch/hermes-agent:v0.21.6
+    restart: always
+    environment:
+      # Pins the container-side UID so rootless containerd maps it onto host
+      # 100999 — the same subuid gitea's data lands on. It does NOT make files
+      # owned by your host user: the userns mapping is fixed and no value here
+      # yields host UID 1000. Drop it and the image's baked UID maps to a
+      # different subuid (109999), which desyncs from a tree you already
+      # chowned. See hermes/README.md#ownership.
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+    volumes:
+      - ${DATA_ROOT:-.}/hermes-data:/opt/data
+      # Personas are read-only prompts, so they stay in git. config.yaml and
+      # cron/jobs.json are seeded into hermes-data/ instead — Hermes mutates
+      # both. Editing a persona needs `compose up -d --force-recreate`, not a
+      # restart: a replaced file gets a new inode and a running container keeps
+      # reading the old one.
+      - ./hermes/sweet-home/AGENTS.md:/opt/data/profiles/sweet-home/AGENTS.md:ro
+      - ./hermes/sweet-home/SOUL.md:/opt/data/profiles/sweet-home/SOUL.md:ro
+      - ./hermes/root/AGENTS.md:/opt/data/profiles/root/AGENTS.md:ro
+      - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: ["gateway", "run"]
+
+  #
+  # Hermes dashboard
+  # Web UI for the two profiles. Deliberately NOT published on the host —
+  # only Caddy reaches it over the compose network, as http://hermes.internal.
+  #
+  hermes-dashboard:
+    container_name: hermes-dashboard
+    image: docker.io/nousresearch/hermes-agent:v0.21.6
+    restart: always
+    depends_on:
+      - hermes
+    environment:
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+    volumes:
+      - ${DATA_ROOT:-.}/hermes-data:/opt/data
+      - ./hermes/sweet-home/AGENTS.md:/opt/data/profiles/sweet-home/AGENTS.md:ro
+      - ./hermes/sweet-home/SOUL.md:/opt/data/profiles/sweet-home/SOUL.md:ro
+      - ./hermes/root/AGENTS.md:/opt/data/profiles/root/AGENTS.md:ro
+      - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
+      - /etc/localtime:/etc/localtime:ro
+    # 0.0.0.0 rather than the 127.0.0.1 default, so Caddy can reach it on the
+    # compose network. No host port mapping, so this does not widen the
+    # surface. Auth is not optional here: Hermes refuses a non-loopback bind
+    # unless an auth provider is registered, and requires it whenever
+    # HERMES_DASHBOARD_PUBLIC_URL is set — see hermes/host/.env.example.
+    command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
+
 volumes:
   model-cache:
   caddy-data:

@@ -1,0 +1,33 @@
+# Hermes Agent config — the DEFAULT profile: a neutral host, not an agent.
+#
+# ~/.hermes is the installation root, so it is always the multiplexing host:
+# one gateway process launched from here serves every profile under
+# profiles/. That role cannot be skipped or renamed — the internal id is
+# always `default` — but the profile behind it does not have to be one of your
+# agents. This one is deliberately empty: no Matrix bot, no persona, no
+# household data. Both real agents live as named profiles, so neither of them
+# is "the main one":
+#
+#   profiles/sweet-home/   household bot — grocery, storeroom, calendar
+#   profiles/root/         ops bot — repo dependency updates
+#
+# DELTA file, not a full dump. Hermes fills every unspecified option from its
+# built-in defaults and materialises the complete config.yaml in place on
+# first run.
+#
+# Seed:  cp config.yaml.example  ${DATA_ROOT}/hermes-data/config.yaml
+
+_config_version: 50
+
+# Serve every profile under profiles/ from this one gateway process. Hermes
+# settles this at boot and rewrites the key to match; setting it here pins the
+# decision instead of leaving it to the per-boot preflight.
+gateway:
+  multiplex_profiles: true
+
+terminal:
+  backend: local
+  cwd: /opt/data
+
+# Deliberately no `model:` — this profile never talks to a model, so there is
+# nothing to configure and nothing to bill.

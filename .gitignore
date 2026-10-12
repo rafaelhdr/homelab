@@ -35,3 +35,9 @@ restore-drill/*
 # containerd service data — live state, never commit. Gitea's app.ini holds
 # its generated SECRET_KEY/INTERNAL_TOKEN, and the tree holds every repo.
 containerd/gitea/
+
+# Hermes live state: the seeded config.yaml (Hermes rewrites it on migration),
+# per-profile .env secrets and Matrix device tokens, state.db, sessions and the
+# E2EE crypto store. Note `containerd/hermes/` is the *tracked* source — the
+# `-data` suffix is what keeps the two apart under a DATA_ROOT of `.`.
+containerd/hermes-data/

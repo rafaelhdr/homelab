@@ -1,6 +1,6 @@
 # containerd / nerdctl
 
-The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin), as a first step in migrating this homelab off K3s/Helmfile. Independent of `k8s/`/`values/` — fresh Postgres, fresh library, not connected to the CNPG cluster or the `immich-library` PVC.
+The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes), as a first step in migrating this homelab off K3s/Helmfile. Independent of `k8s/`/`values/` — fresh Postgres, fresh library, not connected to the CNPG cluster or the `immich-library` PVC.
 
 ## Setup (Immich)
 
@@ -15,7 +15,7 @@ The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, J
 
 ## Data root
 
-Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
+Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `hermes-data/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
 
 ## Notes (Immich)
 
@@ -35,7 +35,7 @@ Self-hosted Git service ([docs](https://docs.gitea.com/installation/install-with
 
 ### First run
 
-1. AdGuard: add a DNS rewrite `git.internal` → `192.168.51.17`, like `photos.internal`/`dns.internal`.
+1. AdGuard: add a DNS rewrite `git.internal` → `100.82.83.52`, like `photos.internal`/`dns.internal`.
 2. `nerdctl compose up -d`
 3. Create the admin account — Gitea refuses to run its CLI as root, hence `-u git`:
 
@@ -56,3 +56,34 @@ Self-hosted Git service ([docs](https://docs.gitea.com/installation/install-with
 ### Bumping the version
 
 `image: docker.io/gitea/gitea:<version>` in `docker-compose.yml` — change the tag, then `nerdctl compose up -d`. Gitea migrates its own schema on start, so no manual DB step.
+
+## Hermes
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) — an AI agent that lives in Matrix. One gateway process, two equal agents:
+
+| Profile | Role | Matrix room |
+|---|---|---|
+| *(host)* | empty default profile — multiplexing host + dashboard, **not an agent** | — |
+| `sweet-home` | grocery list, storeroom, family calendar | the home/grocery room |
+| `root` | repo dependency updates | the root room |
+
+Neither agent is "the main one": `~/.hermes` is always the multiplexing host and cannot be renamed, but it is deliberately left empty so both real agents sit beside each other as named profiles. Both run Xiaomi MiMo (`mimo-v2-flash`) via the built-in `xiaomi` provider.
+
+- **Web**: `http://hermes.internal` (Caddy → `hermes-dashboard:9119`, login with the basic-auth user in `hermes/host/.env`). The dashboard publishes **no** host port — Caddy is the only route in. **Auth is mandatory**: Hermes refuses to bind `0.0.0.0` without an auth provider and requires auth whenever `HERMES_DASHBOARD_PUBLIC_URL` is set, even behind a reverse proxy. That URL must match the Caddy site name or the Host guard rejects requests. `GET /` answers `302 → /login`; `/api/status` is public by design.
+- **Data**: `./hermes-data` (relative to this folder, under `DATA_ROOT`) — host `config.yaml`/`.env`, then `profiles/{sweet-home,root}/` each holding their own config, `.env` secrets and Matrix device tokens, `state.db`, sessions, and the E2EE crypto store. Back it up; never commit it (gitignored).
+- **Source**: `./hermes/` — `host/` (gateway settings), plus per-agent personas (`AGENTS.md`, `SOUL.md`, bind-mounted read-only) and `.example` files for the `config.yaml` / `cron/jobs.json` that Hermes keeps writable in `hermes-data/`.
+
+Hermes runs two Matrix **devices** on one bot account, one per agent. The multiplexing gateway refuses to poll a single token from two profiles, so each gets its own `MATRIX_ACCESS_TOKEN` / `MATRIX_DEVICE_ID`. Pin both — restarting must never mint a fresh device.
+
+The root profile's `monthly-repo-updates` cron job is seeded **disabled**: it needs `gh` and a GitHub App that are deliberately not in the image. See `hermes/README.md`.
+
+### First run
+
+1. Seed the config, cron and `.env` files into `hermes-data/` from the `.example` files under `hermes/` (host, then `profiles/sweet-home/` and `profiles/root/`), then fill in the secrets (Xiaomi key, Matrix credentials, room ids). Steps in `hermes/README.md`.
+2. Carry the household state over from wherever Hermes ran before, into `hermes-data/profiles/sweet-home/`: `grocery.md`, `future-appointments.md`, `past-appointments.md`, `memories/`. Not `state.db`, `sessions/`, `platforms/` or `config.yaml`.
+3. AdGuard: add a DNS rewrite `hermes.internal` → `100.82.83.52`, like `photos.internal`/`git.internal` (same answer as its neighbours — check what they resolve to and match, rather than trusting a literal here).
+4. `nerdctl compose up -d`, then `nerdctl logs -f hermes` — expect both profiles served and both Matrix devices claimed.
+
+### Bumping the version
+
+`image: docker.io/nousresearch/hermes-agent:<version>` in `docker-compose.yml` — change the tag, then `nerdctl compose up -d`. Hermes migrates its own `config.yaml`. For a significant release, diff `hermes/*/config.yaml.example` against the new upstream [`cli-config.yaml.example`](https://github.com/NousResearch/hermes-agent/blob/main/cli-config.yaml.example) and re-apply the deltas.

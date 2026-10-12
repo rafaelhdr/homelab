@@ -1,0 +1,30 @@
+{
+  "jobs": [
+    {
+      "id": "monthly-repo-updates",
+      "name": "monthly-repo-updates",
+      "prompt": "Check the following GitHub repositories for dependency and package updates. Attempt the actual git operations - do NOT check API permissions (the GitHub App token may return push:false in API metadata even when push actually works)\n\nFor each repository:\n\n1. Clone or fetch it using the gh CLI.\n2. Read its AGENTS.md (if present) — it defines exactly what to check and how. Follow those instructions.\n3. If no AGENTS.md update section exists, don't do it. Message in the summary the AGENTS.md is missing the update instructions.\n4. For each update that is needed, open a PR (one PR per change type per repo). Do not bundle multiple unrelated updates into one PR.\n\nRepositories:\n- rafaelhdr/hermes-deploy\n- rafaelhdr/dotfiles\n- rafaelhdr/homelab\n\nWhen done, report:\n- A list of every PR opened with its URL.\n- A list of every repository that was already up to date (no action taken).",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 1 * *",
+        "display": "0 9 1 * *"
+      },
+      "deliver": "matrix",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "state": "scheduled",
+      "enabled": false,
+      "next_run_at": null,
+      "last_run_at": null,
+      "last_status": null,
+      "created_at": "2026-07-01T00:00:00Z",
+      "model": null,
+      "provider": null,
+      "script": null,
+      "last_error": null,
+      "last_delivery_error": null
+    }
+  ]
+}
