@@ -1,6 +1,6 @@
 # Hermes Agent config — root profile (named profile, NOT the host).
 #
-# DELTA file, same contract as ../sweet-home/config.yaml.example: Hermes fills
+# DELTA file, same contract as ../ons-thuis/config.yaml.example: Hermes fills
 # the rest from defaults and materialises the full config.yaml in place.
 # Matrix settings live in .env as `MATRIX_*` variables, not here.
 #

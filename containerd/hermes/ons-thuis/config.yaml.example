@@ -1,4 +1,4 @@
-# Hermes Agent config — sweet-home profile (named profile, NOT the host).
+# Hermes Agent config — ons-thuis profile (named profile, NOT the host).
 #
 # This is a DELTA file, not a full dump. Hermes fills every unspecified option
 # from its built-in defaults and materialises the complete config.yaml in place
@@ -13,7 +13,7 @@
 # Neither agent is "the main one": the multiplexing host is the empty default
 # profile in ../host/, and both agents are named profiles beside each other.
 #
-# Seed:  cp config.yaml.example  ${DATA_ROOT}/hermes-data/profiles/sweet-home/config.yaml
+# Seed:  cp config.yaml.example  ${DATA_ROOT}/hermes-data/profiles/ons-thuis/config.yaml
 # The copy is writable — Hermes owns it and will rewrite it. Never bind-mount
 # this file over the live one.
 
@@ -31,7 +31,7 @@ terminal:
   # This profile's own workdir. HERMES_WRITE_SAFE_ROOT=/opt/data is baked into
   # the official image, so the agent cannot write outside the mounted volume.
   backend: local
-  cwd: /opt/data/profiles/sweet-home
+  cwd: /opt/data/profiles/ons-thuis
 
 agent:
   # Carried over from the previous deployment (the built-in default is 500).

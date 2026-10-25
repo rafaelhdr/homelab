@@ -173,8 +173,8 @@ services:
       # both. Editing a persona needs `compose up -d --force-recreate`, not a
       # restart: a replaced file gets a new inode and a running container keeps
       # reading the old one.
-      - ./hermes/sweet-home/AGENTS.md:/opt/data/profiles/sweet-home/AGENTS.md:ro
-      - ./hermes/sweet-home/SOUL.md:/opt/data/profiles/sweet-home/SOUL.md:ro
+      - ./hermes/ons-thuis/AGENTS.md:/opt/data/profiles/ons-thuis/AGENTS.md:ro
+      - ./hermes/ons-thuis/SOUL.md:/opt/data/profiles/ons-thuis/SOUL.md:ro
       - ./hermes/root/AGENTS.md:/opt/data/profiles/root/AGENTS.md:ro
       - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
       - /etc/localtime:/etc/localtime:ro
@@ -196,8 +196,8 @@ services:
       HERMES_GID: ${HERMES_GID:-1000}
     volumes:
       - ${DATA_ROOT:-.}/hermes-data:/opt/data
-      - ./hermes/sweet-home/AGENTS.md:/opt/data/profiles/sweet-home/AGENTS.md:ro
-      - ./hermes/sweet-home/SOUL.md:/opt/data/profiles/sweet-home/SOUL.md:ro
+      - ./hermes/ons-thuis/AGENTS.md:/opt/data/profiles/ons-thuis/AGENTS.md:ro
+      - ./hermes/ons-thuis/SOUL.md:/opt/data/profiles/ons-thuis/SOUL.md:ro
       - ./hermes/root/AGENTS.md:/opt/data/profiles/root/AGENTS.md:ro
       - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
       - /etc/localtime:/etc/localtime:ro

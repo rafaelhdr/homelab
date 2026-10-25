@@ -8,7 +8,7 @@
 # household data. Both real agents live as named profiles, so neither of them
 # is "the main one":
 #
-#   profiles/sweet-home/   household bot — grocery, storeroom, calendar
+#   profiles/ons-thuis/   household bot — grocery, storeroom, calendar
 #   profiles/root/         ops bot — repo dependency updates
 #
 # DELTA file, not a full dump. Hermes fills every unspecified option from its

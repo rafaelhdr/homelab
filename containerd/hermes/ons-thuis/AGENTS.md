@@ -1,7 +1,7 @@
 # Grocery List
 
 The household provisions are kept in a single file at:
-/opt/data/profiles/sweet-home/grocery.md
+/opt/data/profiles/ons-thuis/grocery.md
 
 It has two sections, marked by headings:
 - `## Grocery` — things that need buying
@@ -63,9 +63,9 @@ read the file before changing it, and write changes back immediately.
 # Calendar
 
 Appointments live in two files, next to grocery.md:
-- `/opt/data/profiles/sweet-home/future-appointments.md` — everything still
+- `/opt/data/profiles/ons-thuis/future-appointments.md` — everything still
   ahead of us.
-- `/opt/data/profiles/sweet-home/past-appointments.md` — a log of one-off
+- `/opt/data/profiles/ons-thuis/past-appointments.md` — a log of one-off
   appointments that have already happened.
 
 `future-appointments.md` has two sections:

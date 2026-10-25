@@ -1,0 +1,56 @@
+{
+  "jobs": [
+    {
+      "id": "daily-appointment-check",
+      "name": "daily-appointment-check",
+      "prompt": "Run the \"Daily appointment check\" from AGENTS.md.\n\nRead /opt/data/profiles/ons-thuis/future-appointments.md. Check today's date and weekday\nagainst the `## Recurring` and `## Upcoming` sections.\n\nIf anything matches today: send a short Matrix message naming today's\nappointment(s), in your own voice. For any one-off `## Upcoming` entry that\nmatched, move it to /opt/data/profiles/ons-thuis/past-appointments.md (append it there,\nremove it from `## Upcoming`) as described in the Housekeeping section.\n\nIf nothing matches today: do not send a Matrix message and do not produce any\nother output. Silence means nothing today.",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * 1-6",
+        "display": "0 8 * * 1-6"
+      },
+      "deliver": "matrix",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "state": "scheduled",
+      "enabled": true,
+      "next_run_at": null,
+      "last_run_at": null,
+      "last_status": null,
+      "created_at": "2026-08-04T00:00:00Z",
+      "model": null,
+      "provider": null,
+      "script": null,
+      "last_error": null,
+      "last_delivery_error": null
+    },
+    {
+      "id": "sunday-weekly-check",
+      "name": "sunday-weekly-check",
+      "prompt": "Run the \"Sunday weekly check\" from AGENTS.md.\n\nRead /opt/data/profiles/ons-thuis/future-appointments.md. First do the daily check: check\ntoday's date and weekday (Sunday) against `## Recurring` and `## Upcoming`,\nand if anything matches, note it and move any matched one-off `## Upcoming`\nentry to /opt/data/profiles/ons-thuis/past-appointments.md.\n\nThen look ahead: list every appointment landing between the coming Monday and\nSaturday — recurring rules whose weekday falls in that range, and any\n`## Upcoming` entries dated in that range.\n\nAlways send a Matrix message today, combining today's appointments (if any)\nwith the week-ahead list. If there's nothing today and nothing in the week\nahead, say so plainly rather than staying silent — Sunday always gets a\nmessage.",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * 0",
+        "display": "0 8 * * 0"
+      },
+      "deliver": "matrix",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "state": "scheduled",
+      "enabled": true,
+      "next_run_at": null,
+      "last_run_at": null,
+      "last_status": null,
+      "created_at": "2026-08-04T00:00:00Z",
+      "model": null,
+      "provider": null,
+      "script": null,
+      "last_error": null,
+      "last_delivery_error": null
+    }
+  ]
+}

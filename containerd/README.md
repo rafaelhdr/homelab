@@ -64,13 +64,13 @@ Self-hosted Git service ([docs](https://docs.gitea.com/installation/install-with
 | Profile | Role | Matrix room |
 |---|---|---|
 | *(host)* | empty default profile — multiplexing host + dashboard, **not an agent** | — |
-| `sweet-home` | grocery list, storeroom, family calendar | the home/grocery room |
+| `ons-thuis` | grocery list, storeroom, family calendar | the home/grocery room |
 | `root` | repo dependency updates | the root room |
 
 Neither agent is "the main one": `~/.hermes` is always the multiplexing host and cannot be renamed, but it is deliberately left empty so both real agents sit beside each other as named profiles. Both run Xiaomi MiMo (`mimo-v2-flash`) via the built-in `xiaomi` provider.
 
 - **Web**: `http://hermes.internal` (Caddy → `hermes-dashboard:9119`, login with the basic-auth user in `hermes/host/.env`). The dashboard publishes **no** host port — Caddy is the only route in. **Auth is mandatory**: Hermes refuses to bind `0.0.0.0` without an auth provider and requires auth whenever `HERMES_DASHBOARD_PUBLIC_URL` is set, even behind a reverse proxy. That URL must match the Caddy site name or the Host guard rejects requests. `GET /` answers `302 → /login`; `/api/status` is public by design.
-- **Data**: `./hermes-data` (relative to this folder, under `DATA_ROOT`) — host `config.yaml`/`.env`, then `profiles/{sweet-home,root}/` each holding their own config, `.env` secrets and Matrix device tokens, `state.db`, sessions, and the E2EE crypto store. Back it up; never commit it (gitignored).
+- **Data**: `./hermes-data` (relative to this folder, under `DATA_ROOT`) — host `config.yaml`/`.env`, then `profiles/{ons-thuis,root}/` each holding their own config, `.env` secrets and Matrix device tokens, `state.db`, sessions, and the E2EE crypto store. Back it up; never commit it (gitignored).
 - **Source**: `./hermes/` — `host/` (gateway settings), plus per-agent personas (`AGENTS.md`, `SOUL.md`, bind-mounted read-only) and `.example` files for the `config.yaml` / `cron/jobs.json` that Hermes keeps writable in `hermes-data/`.
 
 Hermes runs two Matrix **devices** on one bot account, one per agent. The multiplexing gateway refuses to poll a single token from two profiles, so each gets its own `MATRIX_ACCESS_TOKEN` / `MATRIX_DEVICE_ID`. Pin both — restarting must never mint a fresh device.
@@ -79,8 +79,8 @@ The root profile's `monthly-repo-updates` cron job is seeded **disabled**: it ne
 
 ### First run
 
-1. Seed the config, cron and `.env` files into `hermes-data/` from the `.example` files under `hermes/` (host, then `profiles/sweet-home/` and `profiles/root/`), then fill in the secrets (Xiaomi key, Matrix credentials, room ids). Steps in `hermes/README.md`.
-2. Carry the household state over from wherever Hermes ran before, into `hermes-data/profiles/sweet-home/`: `grocery.md`, `future-appointments.md`, `past-appointments.md`, `memories/`. Not `state.db`, `sessions/`, `platforms/` or `config.yaml`.
+1. Seed the config, cron and `.env` files into `hermes-data/` from the `.example` files under `hermes/` (host, then `profiles/ons-thuis/` and `profiles/root/`), then fill in the secrets (Xiaomi key, Matrix credentials, room ids). Steps in `hermes/README.md`.
+2. Carry the household state over from wherever Hermes ran before, into `hermes-data/profiles/ons-thuis/`: `grocery.md`, `future-appointments.md`, `past-appointments.md`, `memories/`. Not `state.db`, `sessions/`, `platforms/` or `config.yaml`.
 3. AdGuard: add a DNS rewrite `hermes.internal` → `100.82.83.52`, like `photos.internal`/`git.internal` (same answer as its neighbours — check what they resolve to and match, rather than trusting a literal here).
 4. `nerdctl compose up -d`, then `nerdctl logs -f hermes` — expect both profiles served and both Matrix devices claimed.
 
