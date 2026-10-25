@@ -7,7 +7,7 @@ that used to run on a dedicated Hetzner box.
 | Profile | Path | Role |
 |---|---|---|
 | *(host)* | `/opt/data` | Empty default profile. Multiplexing host + dashboard, **not an agent** |
-| `ons-thuis` | `/opt/data/profiles/ons-thuis` | Household bot — grocery list, storeroom, family calendar |
+| `ons-thuis` | `/opt/data/profiles/ons-thuis` | Household bot — grocery list, storeroom, family calendar — and a simple-Dutch companion |
 | `root` | `/opt/data/profiles/root` | Ops hand — repo dependency updates |
 
 Neither agent is "the main one". `~/.hermes` is Hermes' installation root, so
