@@ -24,5 +24,5 @@ http://git.internal {
 # container after editing: a replaced file gets a new inode and a running
 # container keeps reading the old one.
 http://hermes.internal {
-	reverse_proxy hermes-dashboard:9119
+	reverse_proxy hermes:9119
 }

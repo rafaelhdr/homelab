@@ -103,7 +103,7 @@ services:
       - ${HOME}/media:/media:ro
     restart: 'unless-stopped'
     environment:
-      - JELLYFIN_PublishedServerUrl=http://example.com
+      - JELLYFIN_PublishedServerUrl=http://media.internal
 
   #
   # Gitea
@@ -166,6 +166,8 @@ services:
       # chowned. See hermes/README.md#ownership.
       HERMES_UID: ${HERMES_UID:-1000}
       HERMES_GID: ${HERMES_GID:-1000}
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
     volumes:
       - ${DATA_ROOT:-.}/hermes-data:/opt/data
       # Personas are read-only prompts, so they stay in git. config.yaml and
@@ -179,34 +181,6 @@ services:
       - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
       - /etc/localtime:/etc/localtime:ro
     command: ["gateway", "run"]
-
-  #
-  # Hermes dashboard
-  # Web UI for the two profiles. Deliberately NOT published on the host —
-  # only Caddy reaches it over the compose network, as http://hermes.internal.
-  #
-  hermes-dashboard:
-    container_name: hermes-dashboard
-    image: docker.io/nousresearch/hermes-agent:v0.21.6
-    restart: always
-    depends_on:
-      - hermes
-    environment:
-      HERMES_UID: ${HERMES_UID:-1000}
-      HERMES_GID: ${HERMES_GID:-1000}
-    volumes:
-      - ${DATA_ROOT:-.}/hermes-data:/opt/data
-      - ./hermes/ons-thuis/AGENTS.md:/opt/data/profiles/ons-thuis/AGENTS.md:ro
-      - ./hermes/ons-thuis/SOUL.md:/opt/data/profiles/ons-thuis/SOUL.md:ro
-      - ./hermes/root/AGENTS.md:/opt/data/profiles/root/AGENTS.md:ro
-      - ./hermes/root/SOUL.md:/opt/data/profiles/root/SOUL.md:ro
-      - /etc/localtime:/etc/localtime:ro
-    # 0.0.0.0 rather than the 127.0.0.1 default, so Caddy can reach it on the
-    # compose network. No host port mapping, so this does not widen the
-    # surface. Auth is not optional here: Hermes refuses a non-loopback bind
-    # unless an auth provider is registered, and requires it whenever
-    # HERMES_DASHBOARD_PUBLIC_URL is set — see hermes/host/.env.example.
-    command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
 
 volumes:
   model-cache:
