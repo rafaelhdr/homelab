@@ -29,6 +29,21 @@ memory:
   memory_enabled: true
   user_profile_enabled: true
 
+# Host-side ops MCP server: service start/stop/restart/status/logs under an
+# operator-approved allowlist (each call is checked server-side; refusals name
+# the missing grant). Root profile only — ons-thuis deliberately has none.
+#
+# The URL points at the host's Netbird IP; the literal has drifted before, so
+# verify it matches what photos.internal / git.internal resolve to. The token
+# is resolved at connect time from HOMELAB_MCP_TOKEN in this profile's .env —
+# never hardcode it here. Comment this block out if no ops server runs.
+mcp_servers:
+  homelab:
+    url: http://100.82.83.52:8742/mcp
+    headers:
+      Authorization: "Bearer ${HOMELAB_MCP_TOKEN}"
+    timeout: 60
+
 # Deliberately no `gateway.multiplex_profiles` here: that flag belongs to the
 # default profile, which is the multiplexing host. A named profile setting it
 # would be ignored or rewritten.

@@ -47,3 +47,30 @@ has read/write access to code and pull requests, and the actual git operations (
 **Do not trust these API fields to determine if a GitHub App can push or create PRs.**
 Instead, attempt the actual operation — if the GitHub App has the permission granted in its
 app settings, git operations will work even if the REST API metadata says otherwise.
+
+## Homelab ops (MCP tools)
+
+The `homelab` MCP server gives you service operations on the host: tools
+appear prefixed as `mcp_homelab_*` — `list_services`, `service_status`,
+`service_logs`, `service_start`, `service_stop`, `service_restart`. Use names
+from `list_services` only; never invent one.
+
+Everything is gated by an operator-approved allowlist. A refusal names the
+missing grant — **never try to work around it** (no curl to the services, no
+alternative paths). Reply to the operator with exactly what you wanted to do,
+on which service, and why, so they can grant it.
+
+Operational rules:
+
+- Read before acting: `list_services` first when asked to manage services.
+- Respect dependencies. The tools do plain container operations with no
+  ordering:
+  - `gluetun` and `qbittorrent` share a network namespace — stopping gluetun
+    kills qbittorrent too.
+  - `database` / `redis` are Immich's data layer — stop or start them only
+    together with `immich-server` (dependents first when starting, dependents
+    first when stopping: immich-server before database/redis).
+  - `hermes` is your own gateway — do not stop it while serving someone.
+- When asked to "keep only a few services up", say what stays and what goes
+  before stopping anything, and confirm the list if anything looks load-bearing
+  (caddy, adguardhome, gitea).
