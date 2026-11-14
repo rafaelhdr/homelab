@@ -261,7 +261,8 @@ and re-apply any deltas you care about.
 
 ## Dashboard
 
-`http://hermes.internal` → the `hermes-dashboard` container on port 9119. It is
+`http://hermes.internal` → the dashboard served by the `hermes` container on
+port 9119 (`HERMES_DASHBOARD=1`). It is
 **not** published on the host and not on any public network: only Caddy reaches
 it, over the compose network.
 
@@ -294,7 +295,7 @@ inode, and a running container stays bound to the old one. After changing them,
 recreate (not just restart) to re-establish the mounts:
 
 ```bash
-nerdctl compose up -d --force-recreate hermes hermes-dashboard caddy
+nerdctl compose up -d --force-recreate hermes caddy
 ```
 
 Caddy has the same behaviour for its own `public.Caddyfile`, which is what makes

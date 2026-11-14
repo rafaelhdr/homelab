@@ -145,7 +145,8 @@ services:
   # Setup: hermes/README.md — config, cron and secrets must be seeded first.
   #
   # Outbound only (matrix.org, api.xiaomimimo.com): no ports are published on
-  # the gateway, and the dashboard below is reachable solely via Caddy.
+  # the gateway. The dashboard runs in-process (HERMES_DASHBOARD below) and is
+  # reachable solely via Caddy.
   #
   # HERMES_UID/HERMES_GID below pin the container UID to 1000 so rootless
   # containerd maps it onto host 100999, matching gitea. They cannot produce
