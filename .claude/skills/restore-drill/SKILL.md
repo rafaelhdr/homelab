@@ -16,8 +16,8 @@ recoverable, end to end, on this local machine. See `AGENTS.md` → "Backups
 (Immich)" for how the backup pipeline itself is wired (kopia timer, Immich's own
 DB-dump cron, why they're offset 15 minutes apart).
 
-All work happens inside `restore-drill/` — nothing here touches the production
-k3s stack or the real `containerd/` Immich instance.
+All work happens inside `restore-drill/` — nothing here touches the real
+`containerd/` Immich instance.
 
 ## What this restores automatically, and what it doesn't
 

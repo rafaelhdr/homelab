@@ -1,21 +1,27 @@
 # homelab
 
-Kubernetes home server managed with [Helmfile](https://github.com/roboll/helmfile).
+Containerd/nerdctl Compose stack for the homelab. This repo used to be a
+K3s/Helmfile cluster; that stack was removed in 2026-10 and Compose is the only
+deployment mechanism now.
 
 ## Services
 
-| App | Purpose | Chart | Version |
-|---|---|---|---|
-| [CNPG](https://cloudnative-pg.io) | Postgres operator | cnpg/cloudnative-pg | — |
-| [Jellyfin](https://jellyfin.org) | Media streaming | jellyfin/jellyfin | 3.2.0 |
-| [Homepage](https://gethomepage.dev) | Dashboard | m0nsterrr/homepage (OCI) | 4.12.1 |
+| App | Purpose |
+|---|---|
+| [Immich](https://immich.app) | Photo/video backup |
+| [Gitea](https://gitea.com) | Self-hosted Git |
+| [Caddy](https://caddyserver.com) | Reverse proxy |
+| [AdGuard Home](https://adguard.com) | DNS |
+| [Jellyfin](https://jellyfin.org) | Media streaming |
+| [Hermes](https://github.com/NousResearch/hermes-agent) | AI agent in Matrix |
 
-[Immich](https://immich.app) (photo/video backup) runs separately via containerd/nerdctl — see `containerd/README.md`.
+Full service notes (env, data layout, gotchas): [`containerd/README.md`](containerd/README.md).
 
 ## Usage
 
 ```bash
-helmfile apply
+cd containerd
+nerdctl compose up -d
 ```
 
 Host-level config (e.g. the Kopia Immich backup timer) is managed with Ansible, run via `just`:
@@ -28,10 +34,7 @@ just deploy
 ## Structure
 
 ```
-├── helmfile.yaml    # Helm repositories and releases
-├── k8s/             # Namespaces, PVs, PVCs, Postgres cluster, ConfigMaps
-├── values/          # Per-app Helm values
-├── containerd/      # Immich, run via nerdctl compose (outside the k8s stack)
+├── containerd/      # The Compose stack (services + per-service source config)
 ├── ansible/         # Host-level config (systemd units, etc), applied via `just deploy`
 ├── restore-drill/   # Throwaway Immich instance for testing the kopia/B2 backup — see below
 └── justfile         # `just deploy` — runs ansible/playbook.yml against $HOST

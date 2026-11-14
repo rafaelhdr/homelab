@@ -1,6 +1,6 @@
 # containerd / nerdctl
 
-The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes), as a first step in migrating this homelab off K3s/Helmfile. Independent of `k8s/`/`values/` — fresh Postgres, fresh library, not connected to the CNPG cluster or the `immich-library` PVC.
+The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes) — the only deployment mechanism since the old K3s/Helmfile stack was removed in 2026-10.
 
 ## Setup (Immich)
 
@@ -21,7 +21,7 @@ Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `h
 
 - `.env` holds `DB_PASSWORD` — gitignored, don't commit it.
 - `docker-compose.yml` is copied from [immich-app/immich's release compose file](https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml). When bumping `IMMICH_VERSION`, diff against that file first and re-sync any changes (image digests, service definitions).
-- Machine learning is enabled (CPU inference, no hardware acceleration configured) — unlike the k8s deployment, which has it disabled.
+- Machine learning is enabled (CPU inference, no hardware acceleration configured).
 - `nerdctl compose` reads the same compose spec as `docker compose`; commands are otherwise identical (`nerdctl compose logs -f`, `nerdctl compose down`, etc).
 
 ## Gitea
