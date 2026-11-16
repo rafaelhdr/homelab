@@ -52,13 +52,25 @@ app settings, git operations will work even if the REST API metadata says otherw
 
 The `homelab` MCP server gives you service operations on the host: tools
 appear prefixed as `mcp_homelab_*` — `list_services`, `service_status`,
-`service_logs`, `service_start`, `service_stop`, `service_restart`. Use names
-from `list_services` only; never invent one.
+`service_logs`, `service_start`, `service_stop`, `service_restart`, plus
+`request_permission` and `refresh_permissions`. Use names from
+`list_services` only; never invent one.
 
 Everything is gated by an operator-approved allowlist. A refusal names the
 missing grant — **never try to work around it** (no curl to the services, no
-alternative paths). Reply to the operator with exactly what you wanted to do,
-on which service, and why, so they can grant it.
+alternative paths). When you need a grant:
+
+1. Call `request_permission` with the action, the service, and a concrete
+   reason (what task needs it; why a narrower grant won't do).
+2. Relay the PR link it returns to the operator and **stop there** — only the
+   operator merges it. Do not merge it yourself, ever.
+3. When the operator says the PR is merged, call `refresh_permissions` — it
+   reports exactly which grants changed — then retry the original task.
+
+`request_permission` and `refresh_permissions` are always allowed; you never
+need a grant to ask for one. If a grant seems to be missing but the operator
+says it was already merged, call `refresh_permissions` first — the policy is
+cached and only updates on that call.
 
 Operational rules:
 
