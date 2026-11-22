@@ -136,6 +136,39 @@ services:
       - '2222:22'
 
   #
+  # Plik
+  # Temporary file/text sharing with a web UI — drop something in from one
+  # device, pick it up on another. Optional login (see below), uploads expire
+  # after 30 days by default. Single Go binary, SQLite metadata.
+  # Source: https://github.com/root-gg/plik
+  #
+  # No host port: reachable only through Caddy at http://share.internal.
+  #
+  plik:
+    container_name: plik
+    image: docker.io/rootgg/plik:1.4.3
+    restart: unless-stopped
+    # The image runs as UID 1000, which can't write to a bind mount created by
+    # rootless nerdctl. Container root maps onto your host user, so files in
+    # plik/ end up owned by you.
+    user: '0:0'
+    environment:
+      # Default paths are relative to the image's /home/plik/server, which
+      # also holds the binary — point both at the /data mount instead.
+      PLIKD_DATA_BACKEND_CONFIG: '{"Directory":"/data/files"}'
+      PLIKD_METADATA_BACKEND_CONFIG: '{"Driver":"sqlite3","ConnectionString":"/data/plik.db"}'
+      # Login is optional: anonymous uploads still work, but uploads made while
+      # logged in show up under "My uploads" on every device.
+      PLIKD_FEATURE_AUTHENTICATION: enabled
+      # Created on first start. No password set here on purpose: Plik generates
+      # one and logs it once — read it with `nerdctl logs plik`.
+      PLIKD_DEFAULT_ADMIN_LOGIN: admin
+      # Behind Caddy: take the client IP from the forwarded header, not Caddy's.
+      PLIKD_SOURCE_IP_HEADER: X-Forwarded-For
+    volumes:
+      - ${DATA_ROOT:-.}/plik:/data
+
+  #
   # Hermes
   # AI agent over Matrix. One gateway process multiplexes two profiles from a
   # single /opt/data: the empty default profile acts as the host and both

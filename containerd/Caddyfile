@@ -26,3 +26,9 @@ http://git.internal {
 http://hermes.internal {
 	reverse_proxy hermes:9119
 }
+
+# Plik (file/text sharing). No host port is published, so this site is the
+# only way in.
+http://share.internal {
+	reverse_proxy plik:8080
+}

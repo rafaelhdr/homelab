@@ -32,3 +32,6 @@ containerd/gitea/
 # E2EE crypto store. Note `containerd/hermes/` is the *tracked* source — the
 # `-data` suffix is what keeps the two apart under a DATA_ROOT of `.`.
 containerd/hermes-data/
+
+# Plik uploads and its SQLite metadata DB.
+containerd/plik/

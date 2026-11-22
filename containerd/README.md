@@ -15,7 +15,7 @@ The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, J
 
 ## Data root
 
-Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `hermes-data/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
+Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `hermes-data/`, `plik/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
 
 ## Notes (Immich)
 
@@ -23,6 +23,15 @@ Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `h
 - `docker-compose.yml` is copied from [immich-app/immich's release compose file](https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml). When bumping `IMMICH_VERSION`, diff against that file first and re-sync any changes (image digests, service definitions).
 - Machine learning is enabled (CPU inference, no hardware acceleration configured).
 - `nerdctl compose` reads the same compose spec as `docker compose`; commands are otherwise identical (`nerdctl compose logs -f`, `nerdctl compose down`, etc).
+
+## Plik
+
+Temporary file and text sharing ([source](https://github.com/root-gg/plik)): open the web UI on one device, upload a file or paste text, then open the link on another.
+
+- **Web**: `http://share.internal` (Caddy → `plik:8080`). No host port is published, so Caddy is the only way in. AdGuard needs a DNS rewrite `share.internal` pointing at the same address as `photos.internal`/`git.internal`.
+- **Auth**: optional. Anonymous uploads work, but uploads made while logged in are listed under **My uploads** on any device, so there's no link to pass around. Uploads expire after 30 days by default.
+- **First login**: user `admin` is created on first start with a random password printed once in the logs: `nerdctl logs plik | grep -i password`. Log in and change it in the UI.
+- **Data**: `./plik` (under `DATA_ROOT`): `files/` holds the uploads and `plik.db` holds the metadata. Never commit it.
 
 ## Gitea
 
