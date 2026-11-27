@@ -3,7 +3,7 @@
 ## Project
 
 Containerd/nerdctl Compose stack for the homelab — Immich, Gitea, Caddy, AdGuard,
-Jellyfin, Hermes, all defined in `containerd/docker-compose.yml` (see
+Jellyfin, Hermes, Plik, Multica, all defined in `containerd/docker-compose.yml` (see
 `containerd/README.md` for per-service notes). Host-level config (systemd units)
 is applied with Ansible via `just deploy` (`ansible/playbook.yml`).
 
@@ -39,7 +39,7 @@ Immich's own scheduled DB backup (Administration → Settings → Backup in the 
 
 ```
 ├── containerd/
-│   ├── docker-compose.yml      # The whole stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes)
+│   ├── docker-compose.yml      # The whole stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes, Plik, Multica)
 │   ├── Caddyfile
 │   ├── README.md               # Per-service notes (data layout, gotchas)
 │   └── hermes/                 # Hermes personas + .example config seeds

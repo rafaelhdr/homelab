@@ -1,6 +1,6 @@
 # containerd / nerdctl
 
-The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes) — the only deployment mechanism since the old K3s/Helmfile stack was removed in 2026-10.
+The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, Jellyfin, Hermes, Plik, Multica) — the only deployment mechanism since the old K3s/Helmfile stack was removed in 2026-10.
 
 ## Setup (Immich)
 
@@ -15,7 +15,7 @@ The homelab's containerd/nerdctl Compose stack (Immich, Gitea, Caddy, AdGuard, J
 
 ## Data root
 
-Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `hermes-data/`, `plik/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
+Service data (Immich `library`/`postgres`, `adguard/`, `jellyfin/`, `gitea/`, `hermes-data/`, `plik/`, `multica/`) lives under `DATA_ROOT`, which defaults to `.` (this folder) so the stack stays standalone. On the server it points at a directory outside any git tree — set `DATA_ROOT=/home/rafaelhdr/homelab-data` in `.env` to keep live state out of clones (`git clean` can't touch it).
 
 ## Notes (Immich)
 
@@ -32,6 +32,27 @@ Temporary file and text sharing ([source](https://github.com/root-gg/plik)): ope
 - **Auth**: optional. Anonymous uploads work, but uploads made while logged in are listed under **My uploads** on any device, so there's no link to pass around. Uploads expire after 30 days by default.
 - **First login**: user `admin` is created on first start with a random password printed once in the logs: `nerdctl logs plik | grep -i password`. Log in and change it in the UI.
 - **Data**: `./plik` (under `DATA_ROOT`): `files/` holds the uploads and `plik.db` holds the metadata. Never commit it.
+
+## Multica
+
+Issue tracker with AI coding agents as assignees ([source](https://github.com/multica-ai/multica), [self-hosting docs](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md)). Three containers: `multica-backend` (Go API + WebSocket, runs its own migrations), `multica-frontend` (Next.js) and `multica-postgres` (pgvector/pg17). The server never runs agents itself. A `multica` daemon does that, on any machine where an agent CLI (Claude Code, Codex, …) is installed and logged in.
+
+- **Web**: `http://kanban.internal`. Caddy sends `/ws` to the backend and everything else to the frontend. No host ports are published.
+- **Secrets** (`.env`): `MULTICA_DB_PASSWORD` and `MULTICA_JWT_SECRET`, each `openssl rand -hex 32`. Compose refuses to start until both are set.
+- **Login**: email + one-time code. No mail server is configured, so the code is written to the log: `nerdctl logs multica_backend 2>&1 | grep 'Verification code'`. Signup is open to anyone who can reach the site, and the first account creates the workspace.
+- **Agents**: on the machine that runs them, install the CLI (`curl -fsSL https://raw.githubusercontent.com/multica-ai/multica/main/scripts/install.sh | bash`), then `multica setup self-host` and point it at `http://kanban.internal`. The runtime shows up under **Settings → Runtimes**.
+- **Data**: `./multica` (under `DATA_ROOT`). `postgres/` holds the database and `uploads/` holds attachments. Never commit it.
+- **Telemetry** is off (`DO_NOT_TRACK=1`). Upstream turns it on by default.
+
+### First run
+
+1. Add `MULTICA_DB_PASSWORD` and `MULTICA_JWT_SECRET` to `.env`.
+2. AdGuard: DNS rewrite `kanban.internal`, same answer as `photos.internal`.
+3. `nerdctl compose up -d`, then log in with the code from the backend log.
+
+### Bumping the version
+
+The backend and web images share one tag (`v0.13.0`). Change both together, diff `docker-compose.selfhost.yml` upstream for new required env, then `nerdctl compose up -d`.
 
 ## Gitea
 

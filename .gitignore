@@ -35,3 +35,6 @@ containerd/hermes-data/
 
 # Plik uploads and its SQLite metadata DB.
 containerd/plik/
+
+# Multica Postgres data and uploaded attachments.
+containerd/multica/

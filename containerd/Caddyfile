@@ -32,3 +32,19 @@ http://hermes.internal {
 http://share.internal {
 	reverse_proxy plik:8080
 }
+
+# Multica. WebSockets go straight to the backend (Next.js rewrites can't carry
+# the Upgrade); everything else hits the frontend, which proxies /api, /auth
+# and /health to the backend. `/ws /ws/*`, not `/ws*`: that glob would also eat
+# workspace slugs like /ws-foo. flush_interval -1 stops Caddy buffering frames.
+http://kanban.internal {
+	@multica_ws path /ws /ws/* /collab
+	handle @multica_ws {
+		reverse_proxy multica-backend:8080 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy multica-frontend:3000
+	}
+}

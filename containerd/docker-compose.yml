@@ -169,6 +169,72 @@ services:
       - ${DATA_ROOT:-.}/plik:/data
 
   #
+  # Multica
+  # Issue tracker where AI coding agents are assignees: assign an issue and an
+  # agent CLI (Claude Code, Codex, ...) picks it up through a daemon. The
+  # server never runs agents itself — the `multica` daemon does, on whatever
+  # machine has the agent CLI logged in (see README).
+  # Source: https://github.com/multica-ai/multica (docker-compose.selfhost.yml)
+  #
+  # No host ports: reachable only through Caddy at http://kanban.internal,
+  # which sends /ws to the backend and everything else to the frontend (the
+  # frontend proxies /api, /auth and /health to the backend itself).
+  #
+  multica-backend:
+    container_name: multica_backend
+    image: ghcr.io/multica-ai/multica-backend:v0.13.0
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://multica:${MULTICA_DB_PASSWORD:?Set MULTICA_DB_PASSWORD in .env}@multica-postgres:5432/multica?sslmode=disable
+      # Signs auth/daemon JWTs and upload URLs: `openssl rand -hex 32`.
+      JWT_SECRET: ${MULTICA_JWT_SECRET:?Set MULTICA_JWT_SECRET in .env}
+      # The backend's origin allowlist defaults to localhost: without these the
+      # WebSocket upgrade from kanban.internal is refused with 403.
+      FRONTEND_ORIGIN: http://kanban.internal
+      MULTICA_APP_URL: http://kanban.internal
+      # URL shown in the Settings -> Runtimes daemon setup commands.
+      MULTICA_DAEMON_SERVER_URL: http://kanban.internal
+      # No mail server: the login code is printed to the backend log instead —
+      # `nerdctl logs multica_backend 2>&1 | grep 'Verification code'`.
+      APP_ENV: production
+      # Off by default upstream: a daily anonymous snapshot to telemetry.multica.ai.
+      DO_NOT_TRACK: '1'
+      # Self-host Gitea/Forgejo integration needs MULTICA_VCS_SECRET_KEY too;
+      # left off until that's wanted.
+      MULTICA_VCS_INTEGRATION_ENABLED: 'false'
+    volumes:
+      - ${DATA_ROOT:-.}/multica/uploads:/app/data/uploads
+    # Ignored by nerdctl; the backend retries the DB for up to 3m on its own.
+    depends_on:
+      - multica-postgres
+
+  multica-frontend:
+    container_name: multica_frontend
+    image: ghcr.io/multica-ai/multica-web:v0.13.0
+    restart: unless-stopped
+    environment:
+      HOSTNAME: 0.0.0.0
+      REMOTE_API_URL: http://multica-backend:8080
+    depends_on:
+      - multica-backend
+
+  multica-postgres:
+    container_name: multica_postgres
+    image: docker.io/pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: multica
+      POSTGRES_USER: multica
+      POSTGRES_PASSWORD: ${MULTICA_DB_PASSWORD:?Set MULTICA_DB_PASSWORD in .env}
+    volumes:
+      - ${DATA_ROOT:-.}/multica/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U multica -d multica']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #
   # Hermes
   # AI agent over Matrix. One gateway process multiplexes two profiles from a
   # single /opt/data: the empty default profile acts as the host and both
